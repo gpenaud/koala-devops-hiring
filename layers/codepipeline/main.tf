@@ -56,6 +56,21 @@ data "aws_iam_policy_document" "codebuild_cloudwatch_policy_document" {
   }
 }
 
+data "aws_iam_policy_document" "codebuild_s3_policy_document" {
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "s3:PutObject",
+      "s3:PutObjectAcl",
+      "s3:GetObject"
+    ]
+    resources = [
+      "arn:aws:s3:::kdh-codebuild/*"
+    ]
+  }
+}
+
 resource "aws_iam_policy" "codebuild_cloudwatch_policy" {
   name        = "KDHCodebuildCloudwatchAccess"
   path        = "/"
@@ -63,11 +78,18 @@ resource "aws_iam_policy" "codebuild_cloudwatch_policy" {
   policy      = data.aws_iam_policy_document.codebuild_cloudwatch_policy_document.json
 }
 
+resource "aws_iam_policy" "codebuild_s3_policy" {
+  name        = "KDHCodebuildS3Access"
+  path        = "/"
+  description = "S3 policy for codebuild"
+  policy      = data.aws_iam_policy_document.codebuild_s3_policy_document.json
+}
+
 # ==============================================================================
 # RESSOURCES
 # ==============================================================================
 
-resource "aws_s3_bucket" "bucket" {
+resource "aws_s3_bucket" "codebuild_bucket" {
   bucket        = "kdh-codebuild"
   force_destroy = true
 }
@@ -76,7 +98,8 @@ resource "aws_iam_role" "codebuild_role" {
   name               = "CodeBuildRole"
   assume_role_policy = data.aws_iam_policy_document.codebuild_assume_role_policy.json
   managed_policy_arns = concat(var.codebuild_policies_arns, [
-    aws_iam_policy.codebuild_cloudwatch_policy.arn
+    aws_iam_policy.codebuild_cloudwatch_policy.arn,
+    aws_iam_policy.codebuild_s3_policy.arn
   ])
 }
 
@@ -89,7 +112,7 @@ resource "aws_codebuild_project" "webapp_build" {
 
   artifacts {
     encryption_disabled    = false
-    name                   = "${var.environment}-webapp-build"
+    name                   = "${var.environment}-webapp-build.zip"
     override_artifact_name = true
     packaging              = "ZIP"
     type                   = "S3"
@@ -130,7 +153,7 @@ resource "aws_codebuild_project" "webapp_build" {
 resource "aws_codebuild_source_credential" "webapp_build" {
   auth_type   = "PERSONAL_ACCESS_TOKEN"
   server_type = "GITHUB"
-  token       = "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"
+  token       = "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"
 }
 
 resource "aws_codebuild_webhook" "webapp_build" {
