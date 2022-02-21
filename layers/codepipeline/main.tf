@@ -14,7 +14,7 @@ provider "aws" {
 terraform {
   backend "s3" {
     bucket = "kdh-tfstates"
-    key    = "codebuild/terraform.tfstate"
+    key    = "codepipeline/terraform.tfstate"
     region = "eu-west-1"
   }
 }
@@ -23,5 +23,5 @@ terraform {
 # RESSOURCES
 # ==============================================================================
 
-# 
+#
 # ------------------------------------------------------------------------------
