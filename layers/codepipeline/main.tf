@@ -127,13 +127,13 @@ resource "aws_codebuild_project" "webapp_build" {
   }
 }
 
-resource "aws_codebuild_source_credential" "example" {
+resource "aws_codebuild_source_credential" "webapp_build" {
   auth_type   = "PERSONAL_ACCESS_TOKEN"
   server_type = "GITHUB"
-  token       = "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"
+  token       = "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"
 }
 
-resource "aws_codebuild_webhook" "example" {
+resource "aws_codebuild_webhook" "webapp_build" {
   project_name = aws_codebuild_project.webapp_build.name
   build_type   = "BUILD"
 
