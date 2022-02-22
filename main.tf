@@ -49,11 +49,43 @@ resource "aws_key_pair" "ssh_key" {
   }
 }
 
+# IAM roles
+# ------------------------------------------------------------------------------
+
+data "aws_iam_policy_document" "ec2_assume_role_policy" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ec2.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "webapp" {
+  name               = "webapp-role"
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role_policy.json
+}
+
+resource "aws_iam_role_policy_attachment" "webapp_codedeploy" {
+  role       = aws_iam_role.webapp.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy"
+}
+
+# IAM Instance profile
+# ------------------------------------------------------------------------------
+
+resource "aws_iam_instance_profile" "webapp" {
+  name = "codedeploy-webapp"
+  role = aws_iam_role.webapp.name
+}
+
 # EC2
 # ------------------------------------------------------------------------------
 
 resource "aws_security_group" "webapp" {
-  name        = "${var.env}-webapp-sg"
+  name        = "${var.environment}-webapp-sg"
   description = "security group for my webapp"
   vpc_id      = data.terraform_remote_state.kdh_network.outputs.kdh_vpc_id
 
@@ -83,11 +115,12 @@ resource "aws_security_group" "webapp" {
 }
 
 resource "aws_launch_configuration" "webapp" {
-  name_prefix = "${var.env}-webapp-"
+  name_prefix = "${var.environment}-webapp-"
 
-  image_id      = "ami-0bf84c42e04519c85" # Amazon Linux 2 AMI (HVM), SSD Volume Type
-  instance_type = "t2.nano"
-  key_name      = aws_key_pair.ssh_key.id
+  image_id             = "ami-0bf84c42e04519c85" # Amazon Linux 2 AMI (HVM), SSD Volume Type
+  instance_type        = "t2.nano"
+  key_name             = aws_key_pair.ssh_key.id
+  iam_instance_profile = aws_iam_instance_profile.webapp.name
 
   security_groups = [
     aws_security_group.webapp.id
@@ -105,7 +138,7 @@ resource "aws_launch_configuration" "webapp" {
 # ------------------------------------------------------------------------------
 
 resource "aws_security_group" "webapp_elb" {
-  name        = "${var.env}-webapp-elb-sg"
+  name        = "${var.environment}-webapp-elb-sg"
   description = "Allow HTTP(S) traffic to instances through Elastic Load Balancer"
   vpc_id      = data.terraform_remote_state.kdh_network.outputs.kdh_vpc_id
 
@@ -130,7 +163,7 @@ resource "aws_security_group" "webapp_elb" {
 }
 
 resource "aws_elb" "webapp_elb" {
-  name = "${var.env}-webapp-elb"
+  name = "${var.environment}-webapp-elb"
   security_groups = [
     aws_security_group.webapp_elb.id
   ]
@@ -163,7 +196,7 @@ resource "aws_autoscaling_group" "webapp" {
   name = "${aws_launch_configuration.webapp.name}-asg"
 
   min_size         = 1
-  desired_capacity = 2
+  desired_capacity = 1
   max_size         = 4
 
   health_check_type = "ELB"
