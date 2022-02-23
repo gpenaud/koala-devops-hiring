@@ -80,5 +80,5 @@ destroy:
 
 ## init all directories unless not needed
 init-all:
-	bash init-all.sh
+	bash scripts/init-all.sh
 	terraform init
