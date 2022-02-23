@@ -1,5 +1,5 @@
 
-variable "env" {
+variable "environment" {
   type = string
 }
 
