@@ -29,3 +29,10 @@ variable "codebuild_policies_arns" {
     "arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess",
   ]
 }
+
+variable "codedeploy_role" {
+  type = list(string)
+  default = [
+    "AmazonEC2RoleforAWSCodeDeploy",
+  ]
+}

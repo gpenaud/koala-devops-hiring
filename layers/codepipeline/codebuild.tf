@@ -133,7 +133,7 @@ resource "aws_codebuild_project" "webapp_build" {
 resource "aws_codebuild_source_credential" "webapp_build" {
   auth_type   = "PERSONAL_ACCESS_TOKEN"
   server_type = "GITHUB"
-  token       = "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"
+  token       = "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"
 }
 
 resource "aws_codebuild_webhook" "webapp_build" {
