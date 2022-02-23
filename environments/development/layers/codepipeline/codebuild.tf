@@ -4,7 +4,7 @@
 # ==============================================================================
 
 data "template_file" "buildspec" {
-  template = file("./../../../koala-devops-hiring-webapp/buildspec.yml")
+  template = file("./../../../../../koala-devops-hiring-webapp/buildspec.yml")
   vars = {
     environment = var.environment
   }

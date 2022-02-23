@@ -32,39 +32,24 @@ help:
 	@printf "\n"
 
 ## generate layers part without confirmation
-layers-apply-without-database:
-	terraform -chdir=layers/tfstate_backend apply -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/network         apply -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/iam        			apply -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/codebuild       apply -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-
-## generate layers part without confirmation
-layers-destroy-without-database:
-	terraform -chdir=layers/codebuild       destroy -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/iam        			destroy -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/network         destroy -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/tfstate_backend destroy -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-
-## generate layers part without confirmation
 layers-apply:
-	terraform -chdir=layers/tfstate_backend apply -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/network         apply -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/database        apply -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/iam        			apply -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-
+	terraform -chdir=environments/${environment}/layers/tfstate_backend apply -var-file ./../../../../${environment}.tfvars -auto-approve -compact-warnings
+	terraform -chdir=environments/${environment}/layers/network 			  apply -var-file ./../../../../${environment}.tfvars -auto-approve -compact-warnings
+	terraform -chdir=environments/${environment}/layers/database 			  apply -var-file ./../../../../${environment}.tfvars -auto-approve -compact-warnings
+	terraform -chdir=environments/${environment}/layers/iam 						apply -var-file ./../../../../${environment}.tfvars -auto-approve -compact-warnings
 ## apply specific layer
 layer-apply:
-	terraform -chdir=layers/${layer} apply -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
+	terraform -chdir=environments/${environment}/layers/${layer} apply -var-file ./../../../../${environment}.tfvars -auto-approve -compact-warnings
 
 ## destroy layers part without confirmation
 layers-destroy:
-	terraform -chdir=layers/iam        			destroy -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/database        destroy -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/network         destroy -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
-	terraform -chdir=layers/tfstate_backend destroy -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
+	terraform -chdir=environments/${environment}/layers/iam 						destroy -var-file ./../../../../${environment}.tfvars -auto-approve -compact-warnings
+	terraform -chdir=environments/${environment}/layers/database 			  destroy -var-file ./../../../../${environment}.tfvars -auto-approve -compact-warnings
+	terraform -chdir=environments/${environment}/layers/network 			  destroy -var-file ./../../../../${environment}.tfvars -auto-approve -compact-warnings
+	terraform -chdir=environments/${environment}/layers/tfstate_backend destroy -var-file ./../../../../${environment}.tfvars -auto-approve -compact-warnings
 ## destroy specific layer
 layer-destroy:
-	terraform -chdir=layers/${layer} destroy -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
+	terraform -chdir=environments/${environment}/layers/${layer} destroy -var-file ./../../../../${environment}.tfvars -auto-approve -compact-warnings
 
 ## plan high-level infrastructure
 plan:
@@ -72,11 +57,11 @@ plan:
 
 ## deploy high-level infrastructure
 apply:
-	terraform apply -var-file ./${environment}.tfvars -auto-approve -compact-warnings
+	terraform -chdir=environments/${environment} apply -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
 
 ## destroy high-level infrastructure
 destroy:
-	terraform destroy -var-file ./${environment}.tfvars -auto-approve -compact-warnings
+	terraform -chdir=environments/${environment} destroy -var-file ./../../${environment}.tfvars -auto-approve -compact-warnings
 
 ## init all directories unless not needed
 init-all:
