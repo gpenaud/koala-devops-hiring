@@ -117,8 +117,8 @@ resource "aws_security_group" "webapp" {
 resource "aws_launch_configuration" "webapp" {
   name_prefix = "${var.environment}-webapp-"
 
-  image_id             = "ami-0bf84c42e04519c85" # Amazon Linux 2 AMI (HVM), SSD Volume Type
-  instance_type        = "t2.nano"
+  image_id             = "ami-08ca3fed11864d6bb" # Ubuntu 20.04 | x64
+  instance_type        = "t2.micro"
   key_name             = aws_key_pair.ssh_key.id
   iam_instance_profile = aws_iam_instance_profile.webapp.name
 
