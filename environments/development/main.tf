@@ -1,4 +1,9 @@
 
+# aws ssm get-parameter
+# aws --region=eu-west-1 ssm get-parameter --name "development/database_host" --with-decryption --output text --query Parameter.Value
+
+# aws ssm get-parameter --name "name" --with-decryption --query 'Parameter.Value' --output text
+
 # ==============================================================================
 # PROVIDERS
 # ==============================================================================
@@ -23,6 +28,8 @@ terraform {
 # DATA
 # ==============================================================================
 
+data "aws_caller_identity" "current" {}
+
 data "terraform_remote_state" "kdh_network" {
   backend = "s3"
   config = {
@@ -33,6 +40,14 @@ data "terraform_remote_state" "kdh_network" {
 }
 
 # ==============================================================================
+# LOCALS
+# ==============================================================================
+
+locals {
+  account_id = data.aws_caller_identity.current.account_id
+}
+
+# ==============================================================================
 # RESSOURCES
 # ==============================================================================
 
@@ -40,8 +55,8 @@ data "terraform_remote_state" "kdh_network" {
 # ------------------------------------------------------------------------------
 
 resource "aws_key_pair" "ssh_key" {
-  key_name   = "gpenaud"
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDLLNYwcvkVf6Zol/gE03XtMKc31gaALFzXeMyZXWfT1MAqgmpPF/lZWMjpzvA5X2xwDknSOQIOw27N8wKXlp9bBY6N2Nw5EbVOzW8eWKU/lCq0FkoE36yiBR+8ISV6eqc0BAJtYrv8AiujbGRApzf7kBGCXrDcdY4GKxiy1gqLBnnRxk+q9ystZBaC14YNnhaIzt1YhcVKPnj/BV+RUkL5Mmf5nlcqNKuOKmh0TZwJdjITwF6aRugKdajr03ZXL0MbaHG3bM8/DRoCLFXr53jPCuvAydNcLsaTvs6NjaXfUJJnKZ4L3vBHsmLB9vDXfA/mw8GYlnSn5O1PrLkZ1wbZOzcnFGZAUju8poY96WIVcQzc08Ne3zSxYlh0wAepy/8lhoV7ubkn2EhiWmawa5DYNQS/GJymFlYT0dGzOL6uyljB5KeFJm4J3zXl7secELVmezII6N9iBuz1B/vjCRYByAoV9PbGw6yn7g2Lt6byCjUmQk9MCR1dhly0uFJ14tgp6UX2TLn5o9eCj7MfQBVvOSV0fyyb1ijigJGRO1NIF3Ddz2fPzygt3aU4K3XRwEKaT4T9rau0ltGu7/LEpiS/8NT88lGMK3FeSyB0fq/6p25B58FrRzQf2vFk8l+dp1DfXl2C0k83c3gNE2BLtcW0puLF6pvNIwlTMV35k9xTVw== gpenaud@personal"
+  key_name   = var.owner
+  public_key = var.webapp_ssh_public_key
 
   tags = {
     owner   = var.owner
@@ -63,15 +78,38 @@ data "aws_iam_policy_document" "ec2_assume_role_policy" {
   }
 }
 
-resource "aws_iam_role" "webapp" {
-  name               = "webapp-role"
-  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role_policy.json
+data "aws_iam_policy_document" "ec2_get_ssm_parameters_policy" {
+  statement {
+    effect = "Allow"
+    actions = [
+      "ssm:DescribeParameters",
+      "ssm:GetParameter",
+      "ssm:GetParameters",
+      "ssm:GetParametersByPath"
+    ]
+    resources = [
+      "*"
+    ]
+  }
 }
 
-resource "aws_iam_role_policy_attachment" "webapp_codedeploy" {
-  role       = aws_iam_role.webapp.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy"
+resource "aws_iam_role" "webapp" {
+  name               = "KDHEc2Role"
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role_policy.json
+  managed_policy_arns = [
+    "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy"
+  ]
+
+  inline_policy {
+    name   = "KDHEc2GetSsmParametersPolicy"
+    policy = data.aws_iam_policy_document.ec2_get_ssm_parameters_policy.json
+  }
 }
+
+# resource "aws_iam_role_policy_attachment" "webapp_codedeploy" {
+#   role       = aws_iam_role.webapp.name
+#   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforAWSCodeDeploy"
+# }
 
 # IAM Instance profile
 # ------------------------------------------------------------------------------
@@ -83,6 +121,14 @@ resource "aws_iam_instance_profile" "webapp" {
 
 # EC2
 # ------------------------------------------------------------------------------
+
+data "template_file" "webapp_init" {
+  template = file("./../../scripts/user_data.sh.tpl")
+  vars = {
+    region      = var.region
+    environment = var.environment
+  }
+}
 
 resource "aws_security_group" "webapp" {
   name        = "${var.environment}-webapp-sg"
@@ -117,8 +163,8 @@ resource "aws_security_group" "webapp" {
 resource "aws_launch_configuration" "webapp" {
   name_prefix = "${var.environment}-webapp-"
 
-  image_id             = "ami-08ca3fed11864d6bb" # Ubuntu 20.04 | x64
-  instance_type        = "t2.micro"
+  image_id             = var.webapp_ami_id # Ubuntu 20.04 | x64
+  instance_type        = var.webapp_instance_type
   key_name             = aws_key_pair.ssh_key.id
   iam_instance_profile = aws_iam_instance_profile.webapp.name
 
@@ -127,7 +173,8 @@ resource "aws_launch_configuration" "webapp" {
   ]
 
   associate_public_ip_address = true
-  user_data                   = file("./../../scripts/user_data.sh")
+  user_data                   = data.template_file.webapp_init.rendered
+
 
   lifecycle {
     create_before_destroy = true
