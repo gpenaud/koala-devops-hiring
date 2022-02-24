@@ -72,6 +72,11 @@ resource "aws_iam_policy" "codebuild_s3_policy" {
 resource "aws_s3_bucket" "codebuild_bucket" {
   bucket        = "kdh-codebuild"
   force_destroy = true
+  acl           = "private"
+
+  versioning {
+    enabled = true
+  }
 }
 
 resource "aws_iam_role" "codebuild_role" {
@@ -133,7 +138,7 @@ resource "aws_codebuild_project" "webapp_build" {
 resource "aws_codebuild_source_credential" "webapp_build" {
   auth_type   = "PERSONAL_ACCESS_TOKEN"
   server_type = "GITHUB"
-  token       = "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"
+  token       = var.cicd_github_token
 }
 
 resource "aws_codebuild_webhook" "webapp_build" {

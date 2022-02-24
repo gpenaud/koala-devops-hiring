@@ -36,3 +36,11 @@ variable "codedeploy_role" {
     "AmazonEC2RoleforAWSCodeDeploy",
   ]
 }
+
+variable "cicd_application_name" {
+  type = string
+}
+
+variable "cicd_github_token" {
+  type = string
+}

@@ -59,7 +59,7 @@ resource "aws_sns_topic" "codedeploy_webapp_sns_topic" {
 # ------------------------------------------------------------------------------
 
 resource "aws_codedeploy_app" "codedeploy_webapp" {
-  name             = "webapp"
+  name             = var.cicd_application_name
   compute_platform = "Server"
 }
 
@@ -74,7 +74,7 @@ resource "aws_codedeploy_deployment_config" "codedeploy_webapp_config" {
 
 resource "aws_codedeploy_deployment_group" "codedeploy_webapp_deployment_group" {
   app_name              = aws_codedeploy_app.codedeploy_webapp.name
-  deployment_group_name = "webapp_deployment_group"
+  deployment_group_name = var.environment
   service_role_arn      = aws_iam_role.codedeploy_service.arn
 
   trigger_configuration {
